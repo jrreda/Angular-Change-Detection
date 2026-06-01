@@ -1,27 +1,68 @@
-# ChangeDetectionDeepDive
+# Change Detection Deep Dive
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 18.0.0.
+A hands-on Angular 18 app for exploring **when** and **why** components re-render. Each component exposes a `debugOutput` getter that logs to the console whenever its template bindings are re-evaluated, so you can correlate UI updates with change detection runs.
 
-## Development server
+## What this project demonstrates
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+- **Zoneless change detection** — enabled in `main.ts` via `provideExperimentalZonelessChangeDetection()`. There is no `zone.js`-driven automatic patching of async tasks; updates flow from signals, events, and other explicit notification paths.
+- **`ChangeDetectionStrategy.OnPush`** — used on the counter, messages, and child components. The root `AppComponent` keeps the default strategy for comparison.
+- **Signals** — counter state (`count`), message list (`MessagesService`), and form input (`enteredText`) use Angular signals so updates are tracked precisely.
+- **Component tree** — two feature areas side by side:
+  - **Counter** — increment/decrement with a nested `InfoMessageComponent` (clickable info line).
+  - **Messages** — add messages via a form; list reads from a root-injected `MessagesService`.
 
-## Code scaffolding
+## Project structure
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+```
+src/app/
+├── app.component.*          # Root shell (default change detection)
+├── counter/                 # OnPush + signals; includes info-message child
+├── info-message/            # OnPush child used inside counter
+└── messages/
+    ├── messages.service.ts  # Signal-based message store
+    ├── messages.component.*
+    ├── messages-list/       # Displays allMessages()
+    └── new-message/         # Form to add messages
+```
 
-## Build
+## Experiments to try
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+1. **Open the browser console** and interact with the counter and messages UI. Watch which `[ComponentName] "debugOutput" binding re-evaluated.` lines appear.
+2. **Increment/decrement** — see which components in the counter subtree refresh.
+3. **Click the info message** — observe whether parent/sibling components re-check.
+4. **Add a message** — trace updates through `NewMessageComponent`, `MessagesListComponent`, and ancestors.
+5. **Wait ~4–5 seconds after load** — `CounterComponent` runs `setTimeout` callbacks (one sets `count` to the same value, one only logs). Compare what still triggers binding re-evaluation under zoneless + OnPush.
 
-## Running unit tests
+Debug lines are also rendered in the UI (`.debug-output` paragraphs) so you can see which sections updated without relying only on the console.
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+## Getting started
 
-## Running end-to-end tests
+**Prerequisites:** Node.js and npm.
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+```bash
+npm install
+npm start
+```
 
-## Further help
+Open [http://localhost:4200/](http://localhost:4200/).
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+### Other scripts
+
+| Command        | Description                    |
+|----------------|--------------------------------|
+| `npm start`    | Dev server (`ng serve`)        |
+| `npm run build`| Production build to `dist/`    |
+| `npm test`     | Unit tests (Karma + Jasmine)   |
+
+## Stack
+
+- Angular 18 (standalone components, no NgModules)
+- TypeScript 5.4
+- Experimental zoneless change detection
+- RxJS (dependency; core demos use signals)
+
+## Further reading
+
+- [Angular change detection](https://angular.dev/guide/components/advanced-configuration#changedetectionstrategy)
+- [Signals](https://angular.dev/guide/signals)
+- [Angular CLI](https://angular.dev/tools/cli)
